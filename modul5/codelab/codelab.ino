@@ -1,34 +1,54 @@
-/* Fill-in information from Blynk Device Info here */
-#define BLYNK_TEMPLATE_ID "BLYNK_TEMPLATE_ID"
-#define BLYNK_TEMPLATE_NAME "BLYNK_TEMPLATE_NAME"
-#define BLYNK_AUTH_TOKEN "BLYNK_AUTH_TOKEN"
-/* Comment this out to disable prints and save space */
-#define BLYNK_PRINT Serial
+#define BLYNK_TEMPLATE_ID ""
+#define BLYNK_TEMPLATE_NAME ""
+#define BLYNK_AUTH_TOKEN ""
+
+// Uncomment this line to enable debug prints
+#define BLYNK_PRINT Serial 
+
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
-// Your WiFi credentials.
-char ssid[] = "YOUR_SSID";
-char pass[] = "YOUR_PASSWORD";
-const int ldrPin = 34; BlynkTimer timer;
-void sendData()
-{
-int ldrValue = analogRead(ldrPin);
-Serial.println("LDR VALUE: ");
-Serial.println(ldrValue);
-// You can send any value at any time.
-// Please don't send more that 10 values per second.
-Blynk.virtualWrite(V0, ldrValue);
+
+// WiFi credentials
+char ssid[] = "";
+char pass[] = "";
+
+// Pin configuration
+const int ldrPin = 34; 
+
+// Timer
+BlynkTimer timer;
+
+// Function to read and send LDR data
+void sendData() {
+  int ldrValue = analogRead(ldrPin);
+  Serial.print("LDR VALUE: ");
+  Serial.println(ldrValue);
+  
+  // Send value to Blynk app
+  Blynk.virtualWrite(V0, ldrValue);
 }
-void setup()
-{
-// Debug console
-Serial.begin(9600);
-Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
-// Setup a function to be called every second timer.setInterval(1000L, sendData);
+
+void setup() {
+  // Debug console
+  Serial.begin(9600);
+  delay(1000);
+
+  // Connect to WiFi and Blynk
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+  
+  // Check if connected
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi connection failed!");
+  } else {
+    Serial.println("WiFi connected.");
+  }
+
+  // Setup timer to send LDR data every second
+  timer.setInterval(1000L, sendData);
 }
-void loop()
-}
-Blynk.run();
-timer.run(); // Initiates BlynkTimer
+
+void loop() {
+  Blynk.run();  // Run Blynk
+  timer.run();  // Run timer
 }
