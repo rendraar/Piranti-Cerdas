@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Data Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEJwzQvFf43y8oPVKzQYtba6yLq7sLQsBcFZfyy9Sxlc9MRmxtmfTg8vG9dH9" crossorigin="anonymous">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .charts-section {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .sensor-section {
+            width: 35%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .chart-container {
+            width: 100%;
+            height: 300px;
+        }
+        .sensor-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .sensor-box h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .sensor-box p {
+            font-size: 18px;
+            color: #555;
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .charts-section, .sensor-section {
+                width: 100%;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="charts-section">
+            <!-- Temperature Chart -->
+            <div class="chart-container">
+                <canvas id="temperatureChart"></canvas>
+            </div>
+
+            <!-- Humidity Chart -->
+            <div class="chart-container">
+                <canvas id="humidityChart"></canvas>
+            </div>
+        </div>
+
+        <div class="sensor-section">
+            <!-- Water Level Box -->
+            <div class="sensor-box">
+                <h4>Water Level</h4>
+                <p id="waterLevelValue">Loading...</p>
+            </div>
+
+            <!-- Rain Drop Box -->
+            <div class="sensor-box">
+                <h4>Rain Drop</h4>
+                <p id="rainDropValue">Loading...</p>
+            </div>
+
+            <!-- LDR Status Box -->
+            <div class="sensor-box">
+                <h4>LDR Status</h4>
+                <p id="ldrStatusValue">Loading...</p>
+            </div>
+
+            <!-- LED Control Box -->
+            <div class="sensor-box">
+                <h4>LED Control</h4>
+                <button id="ledControlButton" class="btn btn-warning">Turn On LED</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize charts for temperature and humidity
+        const temperatureChartCtx = document.getElementById('temperatureChart').getContext('2d');
+        const humidityChartCtx = document.getElementById('humidityChart').getContext('2d');
+
+        const temperatureChart = new Chart(temperatureChartCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: [],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Timestamp'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Value'
+                        }
+                    }
+                }
+            }
+        });
+
+        const humidityChart = new Chart(humidityChartCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Humidity (%)',
+                    data: [],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Timestamp'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Value'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Function to fetch sensor data
+        function fetchData() {
+            fetch('fetch_data.php')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Data fetched from server:", data); // Log fetched data
+        
+                    if (Array.isArray(data) && data.length > 0) {
+                        const labels = data.map(row => row.timestamp || "Unknown");
+                        const temperatureData = data.map(row => row.temperature || 0);
+                        const humidityData = data.map(row => row.humidity || 0);
+                        const waterLevelData = data.map(row => row.water_level || 0);
+                        const rainDropData = data.map(row => row.rain_drop || 0);
+                        const ldrStatusData = data.map(row => row.ldr_status || "Unknown");
+        
+                        // Update temperature chart
+                        temperatureChart.data.labels = labels;
+                        temperatureChart.data.datasets[0].data = temperatureData;
+                        temperatureChart.update();
+        
+                        // Update humidity chart
+                        humidityChart.data.labels = labels;
+                        humidityChart.data.datasets[0].data = humidityData;
+                        humidityChart.update();
+        
+                        // Update sensor boxes
+                        const latestWaterLevel = waterLevelData[0]; // Data terbaru
+                        const latestRainDrop = rainDropData[0];
+                        const latestLDRStatus = ldrStatusData[0];
+        
+                        document.getElementById('waterLevelValue').textContent = getWaterLevelString(latestWaterLevel);
+                        document.getElementById('rainDropValue').textContent = getRainDropString(latestRainDrop);
+                        document.getElementById('ldrStatusValue').textContent = `Status: ${latestLDRStatus}`;
+        
+                        console.log("Water Level:", latestWaterLevel);
+                        console.log("Rain Drop:", latestRainDrop);
+                        console.log("LDR Status:", latestLDRStatus);
+                    } else {
+                        console.warn("No valid data received from the server.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                });
+        }        
+
+        // Helper functions to process sensor values
+        function getWaterLevelString(value) {
+            return value > 1500 ? "High Water Level" : "Low Water Level";
+        }
+
+        function getRainDropString(value) {
+            if (value > 4000) {
+                return "Kering";
+            } else if (value > 3500) {
+                return "Drizzle";
+            } else {
+                return "Heavy Rain";
+            }
+        }        
+
+        // LED control logic
+        let ledState = false; // Track the current state of LED (false = off, true = on)
+
+        function toggleLED() {
+            ledState = !ledState;
+
+            fetch(`/control_led?state=${ledState}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const ledStatus = ledState ? "On" : "Off";
+                        alert(`LED is now ${ledStatus}`);
+                        document.getElementById('ledControlButton').textContent = `Turn ${ledState ? 'Off' : 'On'} LED`;
+                    } else {
+                        alert("Failed to control LED.");
+                    }
+                })
+                .catch(error => {
+                    alert("Error controlling LED: " + error);
+                });
+        }
+
+        // Add event listener to the LED control button
+        document.getElementById('ledControlButton').addEventListener('click', toggleLED);
+
+        // Fetch data every 5 seconds
+        setInterval(fetchData, 5000);
+        fetchData(); // Initial fetch
+    </script>
+</body>
+</html>
